@@ -27,7 +27,7 @@ try{
 
 
 app.post("/participants", async (req, res)=>{
-    const name = stripHtml(req.body.name).result
+    const name = req.body.name
     
     // let sanitizedName = stripHtml(name).result
     // console.log(sanitizedName)
@@ -40,15 +40,19 @@ app.post("/participants", async (req, res)=>{
     if (validation.error){
         return res.sendStatus(422)
     }
+
+    const sanitizedName = stripHtml(name).result
+
+
     
     try{
-        const resp = await db.collection("participants").findOne({name: name})
+        const resp = await db.collection("participants").findOne({name: sanitizedName})
         if(resp) return res.sendStatus(409)
         
-        await db.collection("participants").insertOne({name: name, lastStatus: Date.now()})
+        await db.collection("participants").insertOne({name: sanitizedName, lastStatus: Date.now()})
 
         await db.collection("messages").insertOne({
-            from: name, to: 'Todos', text: 'entra na sala...', type: 'status', time: time
+            from: sanitizedName, to: 'Todos', text: 'entra na sala...', type: 'status', time: time
         })
 
         return res.sendStatus(201);
