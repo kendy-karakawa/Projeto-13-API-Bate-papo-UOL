@@ -11,6 +11,7 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+const time = dayjs().format("HH:mm:ss");
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL) 
 let db;
@@ -30,7 +31,7 @@ try{
 
 app.post("/participants", async (req, res)=>{
     const {name} = req.body
-    const time = dayjs().format("HH:mm:ss");
+    
 
     const schema = joi.object({
         name: joi.string().required(),
@@ -72,6 +73,7 @@ app.post("/messages", async (req, res)=>{
     const {to, text, type} = req.body;
     const name = req.headers.user
 
+
     try{
         const schema = joi.object({
             to: joi.string().required(),
@@ -84,6 +86,7 @@ app.post("/messages", async (req, res)=>{
 
         const verification = schema.validate({to, text, type}, {abortEarly: true})
         if (verification.error || !findParticipants){
+            console.log(verification.error)
             return res.sendStatus(422)
         }
         await db.collection("messages").insertOne({
@@ -123,17 +126,6 @@ app.get("/messages", async (req, res)=>{
             return res.status(500).send(err.message);
     })
 
-
-    // try{
-    //     const resp = await db.collection("messages").find({})
-    //     //const message = resp.filter(item => {item.type === "message"})
-    //     //const privateMessage = resp.filter(item => item.type === "private_message" && (item.from === user || item.to === user))
-    //     res.send(resp)
-    // }catch(erro){
-    //     return res.status(500).send(erro.message);
-    // }
-
-
 })
 
 app.post("/status", async (req, res)=>{
@@ -153,29 +145,31 @@ app.post("/status", async (req, res)=>{
     }
 })
 
-app.delete("/messages/:id", async (req, res)=>{
-    const user = req.headers.user 
-    const {id} = req.params
+// app.delete("/messages/:id", async (req, res)=>{
+//     const user = req.headers.user 
+//     const {id} = req.params
 
-    try{
-        const findMessage = await db.collection("messages").findOne({_id:ObjectId(id) })
-        if(!findMessage) return res.sendStatus(404)
+//     try{
+//         const findMessage = await db.collection("messages").findOne({_id:ObjectId(id) })
+//         if(!findMessage) return res.sendStatus(404)
 
-        if(findMessage.from !== user) return res.sendStatus(401)
+//         if(findMessage.from !== user) return res.sendStatus(401)
 
-        db.collection("messages").deleteOne({_id:ObjectId(id)})
+//         db.collection("messages").deleteOne({_id:ObjectId(id)})
     
-    }catch(err){
-        return res.status(500).send(err.message)
-    }
+//     }catch(err){
+//         return res.status(500).send(err.message)
+//     }
     
-})
+// })
 
-setInterval(removeUser, 15000)
+
+
+//setInterval(removeUser, 15000)
 
 async function removeUser(){
     const now = Date.now()
-    const time = dayjs().format("HH:mm:ss");
+   
 
     try{
        const user =  await db.collection("participants").findOne({})
