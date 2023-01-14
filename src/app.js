@@ -80,7 +80,7 @@ app.post("/messages", async (req, res)=>{
         const schema = joi.object({
             to: joi.string().required(),
             text: joi.string().required(),
-            type: joi.valid('message', 'private_message')
+            type: joi.valid('message', 'private_message').required()
         })
 
         const findParticipants = await db.collection("participants").findOne({name: name})
@@ -105,8 +105,12 @@ app.get("/messages", async (req, res)=>{
     const user = req.headers.user
     const limite = req.query.limit
 
+    if(limite && limite <= 0){
+        return res.sendStatus(422)
+    }    
+   
     await db.collection("messages").find({}).toArray().then(resp =>{
-        const message = resp.filter(item => item.type === "message" || item.type === "private_message" && (item.from === user || item.to === user))
+        const message = resp.filter(item => item.type === "message" || "status"|| item.type === "private_message" && (item.from === user || item.to === user))
     
         
         if(limite){
@@ -147,14 +151,14 @@ app.post("/status", async (req, res)=>{
     }
 })
 
-setInterval(removeUser, 15000)
+//setInterval(removeUser, 15000)
 
 async function removeUser(){
     const now = Date.now()
 
     try{
        const user =  await db.collection("participants").findOne({})
-       if(user.lastStatus < now - 10000 ){
+       if(user && user.lastStatus < now - 10000 ){
         await db.collection("participants").deleteOne({name: user.name})
         db.collection("messages").insertOne({from: user.name, to: 'Todos', text: 'sai da sala...', type: 'status', time: time})
         console.log(`${user.name} deletado`)
