@@ -147,9 +147,22 @@ app.post("/status", async (req, res)=>{
     }
 })
 
-function removeUser(){
+setInterval(removeUser, 15000)
+
+async function removeUser(){
     const now = Date.now()
-    
+
+    try{
+       const user =  await db.collection("participants").findOne({})
+       if(user.lastStatus < now - 10000 ){
+        await db.collection("participants").deleteOne({name: user.name})
+        db.collection("messages").insertOne({from: user.name, to: 'Todos', text: 'sai da sala...', type: 'status', time: time})
+        console.log(`${user.name} deletado`)
+        }
+
+    }catch(err){
+        console.log(err.message)
+    }
 
 }
 
