@@ -29,8 +29,6 @@ try{
 app.post("/participants", async (req, res)=>{
     const name = req.body.name
     
-    // let sanitizedName = stripHtml(name).result
-    // console.log(sanitizedName)
 
     const schema = joi.object({
         name: joi.string().required(),
@@ -82,7 +80,7 @@ app.post("/messages", async (req, res)=>{
             to: joi.string().required(),
             text: joi.string().required(),
             type: joi.valid('message', 'private_message').required()
-        })
+        })     
 
         const findParticipants = await db.collection("participants").findOne({name: name})
         
@@ -92,8 +90,12 @@ app.post("/messages", async (req, res)=>{
             console.log(verification.error)
             return res.sendStatus(422)
         }
+
+        const sanitizedTo = stripHtml(to).result
+        const sanitizedText = stripHtml(text).result
+
         await db.collection("messages").insertOne({
-            from: name, to: to, text: text, type: type, time: time
+            from: name, to: sanitizedTo, text: sanitizedText, type: type, time: time
             })
 
         return res.sendStatus(201);
