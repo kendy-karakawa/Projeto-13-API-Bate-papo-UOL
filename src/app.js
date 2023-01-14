@@ -105,6 +105,7 @@ app.post("/messages", async (req, res)=>{
 app.get("/messages", async (req, res)=>{
     const user = req.headers.user
     const limite = req.query.limit
+<<<<<<< HEAD
         
     if(limite){
      const schema = joi.number().min(1)
@@ -122,10 +123,24 @@ app.get("/messages", async (req, res)=>{
             if(limite){
             return res.send(message.slice(message.length - limite).reverse()) 
             }
+=======
 
-            res.send(message)
-            }) .catch((res)=> {
-            return res.status(500).send(err.message);
+    if(limite && limite <= 0){
+        return res.sendStatus(422)
+    }    
+   
+    await db.collection("messages").find({}).toArray().then(resp =>{
+        const message = resp.filter(item => item.type === "message" || "status"|| item.type === "private_message" && (item.from === user || item.to === user))
+    
+        
+        if(limite){
+           return res.send(message.slice(message.length - limite)) 
+        }
+>>>>>>> parent of 90b8ccd... oerdem das mensagens
+
+        res.send(message)
+    }) .catch((res)=> {
+        return res.status(500).send(err.message);
     })
 })
 
@@ -146,6 +161,7 @@ app.post("/status", async (req, res)=>{
     }
 })
 
+<<<<<<< HEAD
 app.delete("/messages/:id", async (req, res)=>{
     const user = req.headers.user 
     const {id} = req.params
@@ -167,6 +183,9 @@ app.delete("/messages/:id", async (req, res)=>{
 })
 
 setInterval(removeUser, 15000)
+=======
+//setInterval(removeUser, 15000)
+>>>>>>> parent of 90b8ccd... oerdem das mensagens
 
 async function removeUser(){
     const now = Date.now()
