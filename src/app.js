@@ -157,6 +157,36 @@ app.delete("/messages/:id", async (req, res)=>{
     
 })
 
+app.put("/messages/:id", async (req, res)=>{
+    const user = req.headers.user;
+    const {to,text, type} = req.body
+    const {id} = req.params
+    
+    const schema = joi.object({
+        to: joi.string().required(),
+        text: joi.string().required(),
+        type: joi.valid('message', 'private_message').required()
+    })
+
+    const findUser = await db.collection("participants").findOne({name:user})
+    const verification = schema.validate({to,text,type}, {abortEarly: true})
+    if(!findUser || verification.error) return res.sendStatus(422)
+
+    try{
+        const findMessage = await db.collection("messages").findOne({_id:ObjectId(id)})
+        if (!findMessage) return res.sendStatus(404)
+
+        if(findMessage.from !== user) return res.sendStatus(401)
+        
+        db.collection("messages").updateOne({_id:ObjectId(id)}, {$set: {to, text, type}})
+
+        res.sendStatus(200)
+
+    }catch(err){
+        return res.status(500).send(err.message)
+    }
+})
+
 
 
 setInterval(removeUser, 15000)
