@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 import joi from "joi";
 import {MongoClient, ObjectId} from "mongodb";
 import dayjs from "dayjs";
+import { strict as assert } from "assert";
+import { stripHtml } from "string-strip-html";
 
 dotenv.config()
 const app = express()
@@ -25,8 +27,10 @@ try{
 
 
 app.post("/participants", async (req, res)=>{
-    const {name} = req.body
+    const name = stripHtml(req.body.name).result
     
+    // let sanitizedName = stripHtml(name).result
+    // console.log(sanitizedName)
 
     const schema = joi.object({
         name: joi.string().required(),
