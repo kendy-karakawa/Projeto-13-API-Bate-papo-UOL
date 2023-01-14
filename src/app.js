@@ -5,7 +5,6 @@ import joi from "joi";
 import {MongoClient, ObjectId} from "mongodb";
 import dayjs from "dayjs";
 
-
 dotenv.config()
 const app = express()
 app.use(cors())
@@ -23,10 +22,6 @@ try{
 } catch(err) {
     console.log(err.message)
 }
-
-
-
-// from: name, to: 'Todos', text: 'entra na sala...', type: 'status', time: time
 
 
 app.post("/participants", async (req, res)=>{
@@ -102,21 +97,18 @@ app.post("/messages", async (req, res)=>{
 
 app.get("/messages", async (req, res)=>{
         const user = req.headers.user
-        const limite = req.query.limit
+        const limite = req.query.limit      
         
-        if(limite){
         const schema = joi.number().min(1)
         const validation = schema.validate(limite)
         if(validation.error) {
             console.log(validation.error)
             return res.sendStatus(422)
         }
-        }
 
         await db.collection("messages").find({}).toArray().then(resp =>{
             const message = resp.filter(item => item.type === "message" || item.type === "status" || item.type === "private_message" && (item.from === user || item.to === user))
-        
-            
+
             if(limite){
             return res.send(message.slice(message.length - limite).reverse()) 
             }
@@ -145,27 +137,29 @@ app.post("/status", async (req, res)=>{
     }
 })
 
-// app.delete("/messages/:id", async (req, res)=>{
-//     const user = req.headers.user 
-//     const {id} = req.params
+app.delete("/messages/:id", async (req, res)=>{
+    const user = req.headers.user 
+    const {id} = req.params
 
-//     try{
-//         const findMessage = await db.collection("messages").findOne({_id:ObjectId(id) })
-//         if(!findMessage) return res.sendStatus(404)
+    try{
+        const findMessage = await db.collection("messages").findOne({_id:ObjectId(id) })
+        if(!findMessage) return res.sendStatus(404)
 
-//         if(findMessage.from !== user) return res.sendStatus(401)
+        if(findMessage.from !== user) return res.sendStatus(401)
 
-//         db.collection("messages").deleteOne({_id:ObjectId(id)})
+        db.collection("messages").deleteOne({_id:ObjectId(id)})
+
+        res.sendStatus(200)
     
-//     }catch(err){
-//         return res.status(500).send(err.message)
-//     }
+    }catch(err){
+        return res.status(500).send(err.message)
+    }
     
-// })
+})
 
 
 
-//setInterval(removeUser, 15000)
+setInterval(removeUser, 15000)
 
 async function removeUser(){
     const now = Date.now()
