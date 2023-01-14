@@ -2,27 +2,156 @@ import express from "express"
 import cors from "cors"
 import dotenv from "dotenv";
 import joi from "joi";
-import {MongoClient} from "mongodb";
+import {MongoClient, ObjectId} from "mongodb";
+import dayjs from "dayjs";
+
 
 dotenv.config()
 const app = express()
 app.use(cors())
 app.use(express.json())
 
+
 const mongoClient = new MongoClient(process.env.DATABASE_URL) 
+let db;
+
+
+
+const time = dayjs().format("HH:mm:ss");
+
 
 try{
     await mongoClient.connect()
+    db = mongoClient.db()
     console.log("MongoDB connected!")
 } catch(err) {
     console.log(err.message)
 }
 
-app.get("/", (req, res)=>{
-    res.send("hello word")
+
+
+// from: name, to: 'Todos', text: 'entra na sala...', type: 'status', time: time
+
+
+app.post("/participants", async (req, res)=>{
+    const {name} = req.body
+
+    const schema = joi.object({
+        name: joi.string().required(),
+    })
+
+    const validation = schema.validate({name})
+    if (validation.error){
+        return res.sendStatus(422)
+    }
+    
+    try{
+        const resp = await db.collection("participants").findOne({name: name})
+        if(resp) return res.sendStatus(409)
+        
+        await db.collection("participants").insertOne({name: name, lastStatus: Date.now()})
+
+        await db.collection("messages").insertOne({
+            from: name, to: 'Todos', text: 'entra na sala...', type: 'status', time: time
+        })
+
+        return res.sendStatus(201);
+    }catch(err){
+        return res.status(500).send(err.message);
+    }
 })
 
+app.get("/participants",  (req, res)=>{
+       db.collection("participants").find().toArray().then(dados =>{
+        
+        res.send(dados)
 
+       })
+        .catch((res)=> {
+            return res.status(500).send(err.message);
+        })
+})
+
+app.post("/messages", async (req, res)=>{
+    const {to, text, type} = req.body;
+    const name = req.headers.user
+
+    try{
+        const schema = joi.object({
+            to: joi.string().required(),
+            text: joi.string().required(),
+            type: joi.valid('message', 'private_message')
+        })
+
+        const findParticipants = await db.collection("participants").findOne({name: name})
+        
+
+        const verification = schema.validate({to, text, type}, {abortEarly: true})
+        if (verification.error || !findParticipants){
+            return res.sendStatus(422)
+        }
+        await db.collection("messages").insertOne({
+            from: name, to: to, text: text, type: type, time: time
+            })
+
+        return res.sendStatus(201);
+    }catch(err){
+        return res.status(500).send(err.message);
+    }
+    
+})
+
+app.get("/messages", async (req, res)=>{
+    const user = req.headers.user
+    const limite = req.query.limit
+
+    await db.collection("messages").find({}).toArray().then(resp =>{
+        const message = resp.filter(item => item.type === "message" || item.type === "private_message" && (item.from === user || item.to === user))
+    
+        
+        if(limite){
+           return res.send(message.slice(message.length - limite)) 
+        }
+
+        res.send(message)
+    }) .catch((res)=> {
+        return res.status(500).send(err.message);
+    })
+
+
+    // try{
+    //     const resp = await db.collection("messages").find({})
+    //     //const message = resp.filter(item => {item.type === "message"})
+    //     //const privateMessage = resp.filter(item => item.type === "private_message" && (item.from === user || item.to === user))
+    //     res.send(resp)
+    // }catch(erro){
+    //     return res.status(500).send(erro.message);
+    // }
+
+
+})
+
+app.post("/status", async (req, res)=>{
+    const user = req.headers.user
+
+    try{
+        
+        const findUser = await db.collection("participants").findOne({name: user})
+        if(!findUser) return res.sendStatus(404)
+
+        db.collection("participants").updateOne({name:user}, {$set: {lastStatus: Date.now()}})
+        res.sendStatus(200)
+
+    }catch(err){
+        res.status(500).send(err.message)
+    }
+})
+
+function removeUser(){
+    const now = Date.now()
+    
+
+}
 
 
 const port = 5000
