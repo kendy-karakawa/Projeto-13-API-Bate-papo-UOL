@@ -15,11 +15,6 @@ app.use(express.json())
 const mongoClient = new MongoClient(process.env.DATABASE_URL) 
 let db;
 
-
-
-
-
-
 try{
     await mongoClient.connect()
     db = mongoClient.db()
@@ -103,45 +98,42 @@ app.post("/messages", async (req, res)=>{
 })
 
 app.get("/messages", async (req, res)=>{
-    const user = req.headers.user
-    const limite = req.query.limit
-<<<<<<< HEAD
+        const user = req.headers.user
+        const limite = req.query.limit
         
-    if(limite){
-     const schema = joi.number().min(1)
-    const validation = schema.validate(limite)
+        if(limite){
+        const schema = joi.number().min(1)
+        const validation = schema.validate(limite)
         if(validation.error) {
             console.log(validation.error)
             return res.sendStatus(422)
         }
         }
 
-    await db.collection("messages").find({}).toArray().then(resp =>{
+        await db.collection("messages").find({}).toArray().then(resp =>{
             const message = resp.filter(item => item.type === "message" || item.type === "status" || item.type === "private_message" && (item.from === user || item.to === user))
         
             
             if(limite){
             return res.send(message.slice(message.length - limite).reverse()) 
             }
-=======
 
-    if(limite && limite <= 0){
-        return res.sendStatus(422)
-    }    
-   
-    await db.collection("messages").find({}).toArray().then(resp =>{
-        const message = resp.filter(item => item.type === "message" || "status"|| item.type === "private_message" && (item.from === user || item.to === user))
-    
-        
-        if(limite){
-           return res.send(message.slice(message.length - limite)) 
-        }
->>>>>>> parent of 90b8ccd... oerdem das mensagens
-
-        res.send(message)
-    }) .catch((res)=> {
-        return res.status(500).send(err.message);
+            res.send(message)
+            }) .catch((res)=> {
+            return res.status(500).send(err.message);
     })
+
+
+    // try{
+    //     const resp = await db.collection("messages").find({})
+    //     //const message = resp.filter(item => {item.type === "message"})
+    //     //const privateMessage = resp.filter(item => item.type === "private_message" && (item.from === user || item.to === user))
+    //     res.send(resp)
+    // }catch(erro){
+    //     return res.status(500).send(erro.message);
+    // }
+
+
 })
 
 app.post("/status", async (req, res)=>{
@@ -161,7 +153,6 @@ app.post("/status", async (req, res)=>{
     }
 })
 
-<<<<<<< HEAD
 app.delete("/messages/:id", async (req, res)=>{
     const user = req.headers.user 
     const {id} = req.params
@@ -173,22 +164,18 @@ app.delete("/messages/:id", async (req, res)=>{
         if(findMessage.from !== user) return res.sendStatus(401)
 
         db.collection("messages").deleteOne({_id:ObjectId(id)})
-        res.sendStatus(200)
     
     }catch(err){
         return res.status(500).send(err.message)
     }
-
-
+    
 })
 
 setInterval(removeUser, 15000)
-=======
-//setInterval(removeUser, 15000)
->>>>>>> parent of 90b8ccd... oerdem das mensagens
 
 async function removeUser(){
     const now = Date.now()
+    const time = dayjs().format("HH:mm:ss");
 
     try{
        const user =  await db.collection("participants").findOne({})
